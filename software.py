@@ -4,11 +4,9 @@ import pandas as pd
 from scapy.all import sniff, IP
 import matplotlib.pyplot as plt
 
-# Lista para almacenar los datos
 data = []
 
 
-# Función de callback para cada paquete capturado
 def packet_callback(packet):
     if IP in packet:
         row = {
@@ -18,22 +16,22 @@ def packet_callback(packet):
             "Longitud de paquete": len(packet),
             "Tiempo": packet.time,
         }
-        data.append(row)
+        data.append(row)  # agregar a la lista el paquete recibido
 
 
-# Capturar paquetes
-sniff(prn=packet_callback, store=0, count=50)
+sniff(
+    prn=packet_callback,  # llamar la funcion cada vez que se reciba un paquete
+    store=0,  # no guardar los paquetes en memoria
+    count=50,
+)  # numero de paquetes a capturar
 
-# Crear DataFrame de Pandas
-df = pd.DataFrame(data)
+df = pd.DataFrame(data)  # hacerlo df
 print(df)
 
 
-# Funciones para mostrar diferentes gráficas
-def comunicacionesExitosas():
-    # cada punto con un color diferente
+def intercambioDePaquetes():
     plt.scatter(df["IP de orígen"], df["IP de destino"], cmap="Blues", alpha=0.5)
-    plt.title("Comunicaciones exitosas")
+    plt.title("Intercambio de paquetes")
     plt.xlabel("IP de orígen")
     plt.ylabel("IP de destino")
     plt.show()
@@ -41,8 +39,6 @@ def comunicacionesExitosas():
 
 def frecuenciasProtocolos():
     protocol_counts = df["Protocolo"].value_counts()
-
-    # clasificar por numero de protocolo
     case = {
         1: "ICMP",
         6: "TCP",
@@ -56,8 +52,6 @@ def frecuenciasProtocolos():
         112: "VRRP",
         115: "L2TP",
     }
-
-    # gráfica de pastel
     plt.pie(
         protocol_counts,
         labels=protocol_counts.index.map(case),
@@ -81,21 +75,18 @@ def frecuenciasProtocolos():
     plt.title("Clasificación de protocolo")
     plt.show()
 
+
 def tiempoLongitud():
-    # grafica de linea
-    plt.plot(df["Tiempo"], df["Longitud de paquete"], color="green")
+    plt.plot(df["Tiempo"].abs, df["Longitud de paquete"], color="green")
     plt.title("Trafico a lo largo del tiempo")
     plt.xlabel("Tiempo")
     plt.ylabel("Longitud de paquete")
     plt.show()
-    
 
-    
-# Crear ventana principal
+
 root = tk.Tk()
 root.title("Análisis de tráfico en la red")
 
-# tabla de todos los paquetes capturados
 tree = ttk.Treeview(root)
 tree["columns"] = ("IP de orígen", "IP de destino", "Protocolo", "Longitud de paquete")
 tree.column("#0", width=0, stretch=tk.NO)
@@ -110,7 +101,6 @@ tree.heading("Protocolo", text="Protocolo", anchor=tk.W)
 tree.heading("Longitud de paquete", text="Longitud de paquete", anchor=tk.W)
 tree.grid(row=0, column=0, columnspan=3, sticky="nsew")
 
-# insertar datos en la tabla
 for index, row in df.iterrows():
     tree.insert(
         "",
@@ -124,14 +114,13 @@ for index, row in df.iterrows():
         ),
     )
 
-# Botones para mostrar gráficas
 length_button = tk.Button(
     root, text="Frecuencia de protocolo", command=frecuenciasProtocolos
 )
 length_button.grid(row=1, column=0, sticky="ew")
 
 ip_button = tk.Button(
-    root, text="Comunicaciones exitosas", command=comunicacionesExitosas
+    root, text="Intercambio de paquetes", command=intercambioDePaquetes
 )
 ip_button.grid(row=1, column=1, sticky="ew")
 
@@ -140,12 +129,10 @@ trafico_tiempo_button = tk.Button(
 )
 trafico_tiempo_button.grid(row=1, column=2, sticky="ew")
 
-# Configure rows and columns to resize with the window
 root.grid_rowconfigure(0, weight=1)
 root.grid_rowconfigure(1, weight=1)
 root.grid_columnconfigure(0, weight=1)
 root.grid_columnconfigure(1, weight=1)
 root.grid_columnconfigure(2, weight=1)
 
-# arrancar app principal
 root.mainloop()
