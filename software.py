@@ -1,3 +1,9 @@
+# PARA USAR INSTALAR ESTAS LIBRERIAS
+# pip install tk
+# pip install pandas
+# pip install scapy
+# pip install matplotlib
+
 import tkinter as tk
 from tkinter import ttk
 import pandas as pd
