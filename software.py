@@ -83,7 +83,7 @@ def frecuenciasProtocolos():
 
 
 def tiempoLongitud():
-    plt.plot(df["Tiempo"].abs, df["Longitud de paquete"], color="green")
+    plt.plot(df["Tiempo"], df["Longitud de paquete"], color="green")
     plt.title("Trafico a lo largo del tiempo")
     plt.xlabel("Tiempo")
     plt.ylabel("Longitud de paquete")
@@ -123,17 +123,17 @@ for index, row in df.iterrows():
 length_button = tk.Button(
     root, text="Frecuencia de protocolo", command=frecuenciasProtocolos
 )
-length_button.grid(row=1, column=0, sticky="ew")
+length_button.grid(row=1, column=0, sticky="nsew", ipadx=10, ipady=10, padx=10, pady=10)
 
 ip_button = tk.Button(
     root, text="Intercambio de paquetes", command=intercambioDePaquetes
 )
-ip_button.grid(row=1, column=1, sticky="ew")
+ip_button.grid(row=1, column=1, sticky="nsew", ipadx=10, ipady=10, padx=10, pady=10)
 
 trafico_tiempo_button = tk.Button(
     root, text="Trafico a lo largo del tiempo", command=tiempoLongitud
 )
-trafico_tiempo_button.grid(row=1, column=2, sticky="ew")
+trafico_tiempo_button.grid(row=1, column=2, sticky="nsew", ipadx=10, ipady=10, padx=10, pady=10)
 
 root.grid_rowconfigure(0, weight=1)
 root.grid_rowconfigure(1, weight=1)
