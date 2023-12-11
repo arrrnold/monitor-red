@@ -1,100 +1,151 @@
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, Pango
+import tkinter as tk
+from tkinter import ttk
+import pandas as pd
+from scapy.all import sniff, IP
+import matplotlib.pyplot as plt
 
-class TrafficMonitorApp(Gtk.Window):
-    def __init__(self):
-        super().__init__(title="Proyecto final")
-        self.set_default_size(800, 600)
+# Lista para almacenar los datos
+data = []
 
-        # Main Container
-        main_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        main_bg_color = Gdk.RGBA(1, 1, 1, 1)
-        self.override_background_color(main_container, main_bg_color)
 
-        # Navbar
-        navbar_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        navbar_bg_color = Gdk.RGBA(0, 0, 0, 0)
-        self.override_background_color(navbar_box, navbar_bg_color)
+# Función de callback para cada paquete capturado
+def packet_callback(packet):
+    if IP in packet:
+        row = {
+            "IP de orígen": packet[IP].src,
+            "IP de destino": packet[IP].dst,
+            "Protocolo": packet[IP].proto,
+            "Longitud de paquete": len(packet),
+            "Tiempo": packet.time,
+        }
+        data.append(row)
 
-        toggle_button = Gtk.Button(label="☰")
-        toggle_button.connect("clicked", self.toggle_sidebar)
-        toggle_button_color = Gdk.RGBA(0, 0, 0, 1)
-        toggle_button.override_color(Gtk.StateFlags.NORMAL, toggle_button_color)
-        toggle_button.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1, 1, 1, 1))  # Fondo blanco
-        navbar_box.pack_start(toggle_button, False, False, 0)
 
-        program_name_label = Gtk.Label(label="Monitor de tráfico")
-        program_name_label.set_margin_start(20)
-        program_name_label.set_margin_end(20)
-        program_name_label.set_margin_top(10)
-        program_name_label.set_margin_bottom(10)
-        text_color = Gdk.RGBA(0, 0, 0, 1)
-        program_name_label.override_color(Gtk.StateFlags.NORMAL, text_color)
-        program_name_label.override_font(Pango.FontDescription("Karla 24"))
-        program_name_label.set_alignment(0, 0.5)
-        navbar_box.pack_start(program_name_label, True, True, 0)
+# Capturar paquetes
+sniff(prn=packet_callback, store=0, count=50)
 
-        main_container.pack_start(navbar_box, False, False, 0)
+# Crear DataFrame de Pandas
+df = pd.DataFrame(data)
+print(df)
 
-        # Sidebar
-        sidebar_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        sidebar_bg_color = Gdk.RGBA(0, 0, 0, 0.05)
-        self.override_background_color(sidebar_box, sidebar_bg_color)
-        sidebar_box.set_visible(False)  # Oculta la barra lateral por defecto
 
-        text_color_sidebar = Gdk.RGBA(0, 0, 0, 1)
-        self.add_sidebar_item(sidebar_box, "📅", "Gráfica 1", text_color_sidebar)
-        self.add_sidebar_item(sidebar_box, "📅", "Gráfica 2", text_color_sidebar)
-        self.add_sidebar_item(sidebar_box, "📅", "Gráfica 3", text_color_sidebar)
+# Funciones para mostrar diferentes gráficas
+def comunicacionesExitosas():
+    # cada punto con un color diferente
+    plt.scatter(df["IP de orígen"], df["IP de destino"], cmap="Blues", alpha=0.5)
+    plt.title("Comunicaciones exitosas")
+    plt.xlabel("IP de orígen")
+    plt.ylabel("IP de destino")
+    plt.show()
 
-        sidebar_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        sidebar_container.pack_start(sidebar_box, False, False, 0)
 
-        main_container.pack_start(sidebar_container, False, False, 0)
+def frecuenciasProtocolos():
+    protocol_counts = df["Protocolo"].value_counts()
 
-        # Content
-        content_box = Gtk.Box(spacing=20)
-        content_bg_color = Gdk.RGBA(1, 1, 1, 1)
-        self.override_background_color(content_box, content_bg_color)
+    # clasificar por numero de protocolo
+    case = {
+        1: "ICMP",
+        6: "TCP",
+        17: "UDP",
+        50: "ESP",
+        51: "AH",
+        58: "ICMPv6",
+        88: "EIGRP",
+        89: "OSPF",
+        103: "PIM",
+        112: "VRRP",
+        115: "L2TP",
+    }
 
-        # Rest of your content code...
+    # gráfica de pastel
+    plt.pie(
+        protocol_counts,
+        labels=protocol_counts.index.map(case),
+        autopct="%1.1f%%",
+        shadow=True,
+        startangle=90,
+        colors=[
+            "#ff9999",
+            "#66b3ff",
+            "#99ff99",
+            "#ffcc99",
+            "#ffccff",
+            "#ffff99",
+            "#ff6666",
+            "#66ff99",
+            "#ff99ff",
+            "#99ffff",
+            "#ff9966",
+        ],
+    )
+    plt.title("Clasificación de protocolo")
+    plt.show()
 
-        main_container.pack_start(content_box, True, True, 0)
+def tiempoLongitud():
+    # grafica de linea
+    plt.plot(df["Tiempo"], df["Longitud de paquete"], color="green")
+    plt.title("Trafico a lo largo del tiempo")
+    plt.xlabel("Tiempo")
+    plt.ylabel("Longitud de paquete")
+    plt.show()
+    
 
-        # Show the window
-        self.add(main_container)
-        self.show_all()
+    
+# Crear ventana principal
+root = tk.Tk()
+root.title("Análisis de tráfico en la red")
 
-    def override_background_color(self, widget, rgba_color):
-        widget.override_background_color(Gtk.StateFlags.NORMAL, rgba_color)
+# tabla de todos los paquetes capturados
+tree = ttk.Treeview(root)
+tree["columns"] = ("IP de orígen", "IP de destino", "Protocolo", "Longitud de paquete")
+tree.column("#0", width=0, stretch=tk.NO)
+tree.column("IP de orígen", anchor=tk.W, width=150)
+tree.column("IP de destino", anchor=tk.W, width=150)
+tree.column("Protocolo", anchor=tk.W, width=100)
+tree.column("Longitud de paquete", anchor=tk.W, width=100)
+tree.heading("#0", text="", anchor=tk.W)
+tree.heading("IP de orígen", text="IP de orígen", anchor=tk.W)
+tree.heading("IP de destino", text="IP de destino", anchor=tk.W)
+tree.heading("Protocolo", text="Protocolo", anchor=tk.W)
+tree.heading("Longitud de paquete", text="Longitud de paquete", anchor=tk.W)
+tree.grid(row=0, column=0, columnspan=3, sticky="nsew")
 
-    def add_sidebar_item(self, parent_box, icon, label_text, text_color):
-        item_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        item_box.set_margin_start(20)
-        item_box.set_margin_end(20)
-        item_box.set_margin_top(20)
-        item_box.set_margin_bottom(20)
+# insertar datos en la tabla
+for index, row in df.iterrows():
+    tree.insert(
+        "",
+        index,
+        text="",
+        values=(
+            row["IP de orígen"],
+            row["IP de destino"],
+            row["Protocolo"],
+            row["Longitud de paquete"],
+        ),
+    )
 
-        icon_label = Gtk.Label(label=icon)
-        icon_label.set_markup(f"<span size='normal' weight='bold'>{icon}</span>")
-        icon_label.override_color(Gtk.StateFlags.NORMAL, text_color)
-        icon_label.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(1, 1, 1, 1))  # Fondo blanco
-        item_box.pack_start(icon_label, False, False, 0)
+# Botones para mostrar gráficas
+length_button = tk.Button(
+    root, text="Frecuencia de protocolo", command=frecuenciasProtocolos
+)
+length_button.grid(row=1, column=0, sticky="ew")
 
-        graph_label = Gtk.Label(label=label_text)
-        graph_label.set_markup(f"<span size='normal' weight='normal'>{label_text}</span>")
-        graph_label.override_font(Pango.FontDescription("Karla 14"))
-        graph_label.override_color(Gtk.StateFlags.NORMAL, text_color)
-        item_box.pack_start(graph_label, True, True, 0)
+ip_button = tk.Button(
+    root, text="Comunicaciones exitosas", command=comunicacionesExitosas
+)
+ip_button.grid(row=1, column=1, sticky="ew")
 
-        parent_box.pack_start(item_box, False, False, 0)
+trafico_tiempo_button = tk.Button(
+    root, text="Trafico a lo largo del tiempo", command=tiempoLongitud
+)
+trafico_tiempo_button.grid(row=1, column=2, sticky="ew")
 
-    def toggle_sidebar(self, button):
-        sidebar = self.get_child().get_children()[1].get_children()[0]
-        sidebar.set_visible(not sidebar.get_visible())
+# Configure rows and columns to resize with the window
+root.grid_rowconfigure(0, weight=1)
+root.grid_rowconfigure(1, weight=1)
+root.grid_columnconfigure(0, weight=1)
+root.grid_columnconfigure(1, weight=1)
+root.grid_columnconfigure(2, weight=1)
 
-if __name__ == "__main__":
-    app = TrafficMonitorApp()
-    app.connect("destroy", Gtk.main_quit)
-    Gtk.main()
+# arrancar app principal
+root.mainloop()
