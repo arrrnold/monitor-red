@@ -28,8 +28,8 @@ def packet_callback(packet):
 sniff(
     prn=packet_callback,  # llamar la funcion cada vez que se reciba un paquete
     store=0,  # no guardar los paquetes en memoria
-    count=50,
-)  # numero de paquetes a capturar
+    count=100) # muestrear 100 veces
+ 
 
 df = pd.DataFrame(data)  # hacerlo df
 print(df)
